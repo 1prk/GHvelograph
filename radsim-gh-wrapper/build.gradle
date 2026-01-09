@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+allprojects {
+    group = 'org.radsim'
+    version = '0.1.0-SNAPSHOT'
+
+    repositories {
+        mavenLocal()  // For GraphHopper artifacts built locally
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    // Use Java 11 bytecode compatibility (compiles with installed Java version)
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    dependencies {
+        testImplementation 'junit:junit:4.13.2'
+    }
+}

@@ -1,0 +1,6 @@
+rootProject.name = 'radsim-gh-wrapper'
+include 'wrapper'
+
+// Note: GraphHopper is a Maven project in ../graphhopper
+// We'll reference its artifacts from local Maven repository (~/.m2/repository)
+// after running 'mvn install' in the graphhopper directory

@@ -1,0 +1,34 @@
+plugins {
+    id 'application'
+}
+
+application {
+    mainClass = 'org.radsim.ghwrapper.cli.Main'
+}
+
+dependencies {
+    // GraphHopper dependencies from Maven Central
+    // Using latest stable release
+    implementation 'com.graphhopper:graphhopper-core:11.0'
+
+    // Logging
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'ch.qos.logback:logback-classic:1.2.11'
+
+    // CLI argument parsing
+    implementation 'info.picocli:picocli:4.7.5'
+    annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
+
+    // OSM PBF parsing library - using Osmosis for direct PBF reading
+    implementation 'org.openstreetmap.osmosis:osmosis-pbf:0.48.3'
+    implementation 'org.openstreetmap.osmosis:osmosis-core:0.48.3'
+    implementation 'org.openstreetmap.osmosis:osmosis-osm-binary:0.48.3'
+
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+}
+
+tasks.named('run') {
+    standardInput = System.in
+}
