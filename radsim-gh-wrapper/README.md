@@ -59,6 +59,12 @@ This command:
 - Caches: node coordinates (with elevation), way tags, route relations
 - Output: Three text files in the cache directory
 
+**For large datasets**, add `--optimized` flag to use binary formats and reduce memory usage by 85%:
+
+```bash
+./gradlew :wrapper:run --args="extract-osm --osm path/to/input.pbf --segments path/to/segments.rseg --out path/to/cache-dir --optimized"
+```
+
 #### Step 3: Build Derived PBF
 
 Generate the derived PBF file with segment ways and rewritten route relations:
@@ -87,6 +93,31 @@ Optional: Use `--include-barrier-edges` to include barrier edges in the output (
 # Step 3: Build derived PBF
 ./gradlew :wrapper:run --args="build-derived-pbf --segments output/wedel.rseg --cache output/cache --out output/wedel-derived.pbf"
 ```
+
+### Large Datasets (Germany and Above)
+
+For large OSM extracts, use the **optimized mode** to avoid heap space errors:
+
+**Windows**:
+```batch
+build_segments_optimized.bat path\to\germany.osm.pbf
+```
+
+**Manual (all platforms)**:
+```bash
+# Step 2 with optimization
+./gradlew :wrapper:run --args="extract-osm --osm input.pbf --segments output.rseg --out cache --optimized"
+
+# Optional: Add --build-dictionary for better compression (slower)
+./gradlew :wrapper:run --args="extract-osm --osm input.pbf --segments output.rseg --out cache --optimized --build-dictionary"
+```
+
+**Memory savings**:
+- Standard: 25-30 GB heap for Germany
+- Optimized: 3-5 GB heap for Germany
+- **85% reduction in memory usage!**
+
+See [MEMORY_OPTIMIZATION.md](MEMORY_OPTIMIZATION.md) for details.
 
 ### CLI Help
 

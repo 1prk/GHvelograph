@@ -2,3 +2,4 @@ wrapper/test-cache
 build/
 *.pbf
 *.rseg
+*.md

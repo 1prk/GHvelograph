@@ -42,6 +42,12 @@ public class BuildDerivedPbfCommand implements Callable<Integer> {
     )
     private boolean includeBarrierEdges = false;
 
+    @Option(
+        names = {"--force", "-f"},
+        description = "Force rebuild even if derived PBF already exists"
+    )
+    private boolean force = false;
+
     @Override
     public Integer call() throws Exception {
         // Validate inputs
@@ -65,6 +71,20 @@ public class BuildDerivedPbfCommand implements Callable<Integer> {
             return 1;
         }
 
+        // Check if output already exists
+        if (outputFile.exists() && !force) {
+            System.out.println("Derived PBF already exists: " + outputFile);
+            System.out.println("Skipping build. Use --force to rebuild.");
+            System.out.println();
+
+            // Report existing file info
+            System.out.println("Existing derived PBF info:");
+            System.out.println("  Path: " + outputFile);
+            System.out.println("  Size: " + (outputFile.length() / 1024 / 1024) + " MB");
+
+            return 0;
+        }
+
         // Ensure output directory exists
         File outputDir = outputFile.getParentFile();
         if (outputDir != null && !outputDir.exists()) {
@@ -74,6 +94,9 @@ public class BuildDerivedPbfCommand implements Callable<Integer> {
             }
         }
 
+        if (force && outputFile.exists()) {
+            System.out.println("Forcing rebuild (existing file will be overwritten)");
+        }
         System.out.println("Building derived PBF file...");
         System.out.println();
         System.out.println("Inputs:");
@@ -82,17 +105,54 @@ public class BuildDerivedPbfCommand implements Callable<Integer> {
         System.out.println("  Exclude barrier edges: " + !includeBarrierEdges);
         System.out.println();
 
-        // Load cache files
+        // Load cache files - auto-detect binary vs text format
         System.out.println("Loading cache files...");
 
-        NodeCache nodeCache = new NodeCache(cacheDir.toPath().resolve("nodes.txt"));
-        nodeCache.load();
-        System.out.println("  Loaded " + nodeCache.size() + " nodes");
+        // Check for binary or text node cache
+        boolean useBinaryNodeCache = cacheDir.toPath().resolve("nodes.bin").toFile().exists();
+        boolean useBinaryWayCache = cacheDir.toPath().resolve("way_tags.bin").toFile().exists();
 
-        WayTagCache wayTagCache = new WayTagCache(cacheDir.toPath().resolve("way_tags.txt"));
-        wayTagCache.load();
-        System.out.println("  Loaded " + wayTagCache.size() + " ways");
+        if (useBinaryNodeCache) {
+            System.out.println("  Using optimized binary node cache");
+        } else {
+            System.out.println("  Using legacy text node cache");
+        }
 
+        if (useBinaryWayCache) {
+            System.out.println("  Using optimized compressed way tag cache");
+        } else {
+            System.out.println("  Using legacy text way tag cache");
+        }
+
+        // Load node cache
+        NodeCache nodeCache = null;
+        BinaryNodeCache binaryNodeCache = null;
+
+        if (useBinaryNodeCache) {
+            binaryNodeCache = new BinaryNodeCache(cacheDir.toPath().resolve("nodes.bin"));
+            binaryNodeCache.load();
+            System.out.println("  Loaded " + binaryNodeCache.size() + " nodes");
+        } else {
+            nodeCache = new NodeCache(cacheDir.toPath().resolve("nodes.txt"));
+            nodeCache.load();
+            System.out.println("  Loaded " + nodeCache.size() + " nodes");
+        }
+
+        // Load way tag cache
+        WayTagCache wayTagCache = null;
+        CompressedWayTagCache compressedWayTagCache = null;
+
+        if (useBinaryWayCache) {
+            compressedWayTagCache = new CompressedWayTagCache(cacheDir.toPath().resolve("way_tags.bin"));
+            compressedWayTagCache.load();
+            System.out.println("  Loaded " + compressedWayTagCache.size() + " ways");
+        } else {
+            wayTagCache = new WayTagCache(cacheDir.toPath().resolve("way_tags.txt"));
+            wayTagCache.load();
+            System.out.println("  Loaded " + wayTagCache.size() + " ways");
+        }
+
+        // Load relation cache (always text for now)
         RelationCache relationCache = new RelationCache(cacheDir.toPath().resolve("relations.txt"));
         relationCache.load();
         System.out.println("  Loaded " + relationCache.size() + " relations");
@@ -111,10 +171,15 @@ public class BuildDerivedPbfCommand implements Callable<Integer> {
 
         // Write derived PBF
         System.out.println("Writing derived PBF file...");
+
+        // Use the appropriate cache type (both implement the same interface)
+        INodeCache iNodeCache = useBinaryNodeCache ? binaryNodeCache : nodeCache;
+        IWayTagCache iWayTagCache = useBinaryWayCache ? compressedWayTagCache : wayTagCache;
+
         DerivedPbfWriter writer = new DerivedPbfWriter(
             segmentStoreFile.toPath(),
-            nodeCache,
-            wayTagCache,
+            iNodeCache,
+            iWayTagCache,
             rewrittenRelations,
             !includeBarrierEdges  // excludeBarrierEdges
         );

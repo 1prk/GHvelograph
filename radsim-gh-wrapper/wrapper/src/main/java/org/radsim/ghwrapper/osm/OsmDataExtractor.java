@@ -18,6 +18,8 @@ import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.*;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
 /**
  * Extracts needed OSM data from PBF file based on segment store.
  *
@@ -44,8 +46,8 @@ public class OsmDataExtractor {
 
         // Pass 1: Read segment store to collect needed IDs
         LOGGER.info("Pass 1: Reading segment store to identify needed IDs...");
-        Set<Long> neededNodeIds = new HashSet<>();
-        Set<Long> neededWayIds = new HashSet<>();
+        LongOpenHashSet neededNodeIds = new LongOpenHashSet();
+        LongOpenHashSet neededWayIds = new LongOpenHashSet();
 
         try (SegmentStoreReader reader = new SegmentStoreReader(segmentStorePath)) {
             for (SegmentRecord record : reader) {
@@ -163,10 +165,19 @@ public class OsmDataExtractor {
             }
         }
 
+        private static final Set<String> WHITELIST = Set.of(
+            "highway", "name", "ref", "surface", "maxspeed", "oneway", "bicycle", "foot"
+        );
+
         void handleWay(ReaderWay way) throws IOException {
             if (neededWayIds.contains(way.getId())) {
                 Map<String, String> tags = new HashMap<>();
-                way.getTags().forEach((k, v) -> tags.put(k.toString(), v.toString()));
+                way.getTags().forEach((k, v) -> {
+                    String key = k.toString();
+                    if (WHITELIST.contains(key)) {
+                        tags.put(key, v.toString());
+                    }
+                });
                 wayTagCache.put(way.getId(), tags);
                 waysExtracted++;
 

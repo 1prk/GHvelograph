@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
  * Simple cache for OSM nodes (id -> lat/lon/ele).
@@ -12,9 +13,9 @@ import java.util.Map;
  *
  * Format: Each line is "osmNodeId,lat,lon,ele"
  */
-public class NodeCache implements Closeable {
+public class NodeCache implements Closeable, INodeCache {
     private final Path cacheFile;
-    private final Map<Long, OsmNode> cache = new HashMap<>();
+    private final Long2ObjectOpenHashMap<OsmNode> cache = new Long2ObjectOpenHashMap<>();
     private BufferedWriter writer;
 
     public NodeCache(Path cacheFile) {

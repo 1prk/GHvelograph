@@ -28,6 +28,12 @@ public class CaptureSegmentsCommand implements Callable<Integer> {
     )
     private File segmentStoreFile;
 
+    @Option(
+        names = {"--force", "-f"},
+        description = "Force re-capture even if segment store already exists"
+    )
+    private boolean force = false;
+
     @Override
     public Integer call() throws Exception {
         // Validate input file exists
@@ -41,6 +47,20 @@ public class CaptureSegmentsCommand implements Callable<Integer> {
             return 1;
         }
 
+        // Check if output already exists
+        if (segmentStoreFile.exists() && !force) {
+            System.out.println("Segment store already exists: " + segmentStoreFile);
+            System.out.println("Skipping capture. Use --force to re-capture.");
+            System.out.println();
+
+            // Report existing file info
+            System.out.println("Existing segment store info:");
+            System.out.println("  Path: " + segmentStoreFile);
+            System.out.println("  Size: " + (segmentStoreFile.length() / 1024 / 1024) + " MB");
+
+            return 0;
+        }
+
         // Create parent directory for output if needed
         File parentDir = segmentStoreFile.getParentFile();
         if (parentDir != null && !parentDir.exists()) {
@@ -51,6 +71,9 @@ public class CaptureSegmentsCommand implements Callable<Integer> {
         }
 
         // Run the import
+        if (force && segmentStoreFile.exists()) {
+            System.out.println("Forcing re-capture (existing file will be overwritten)");
+        }
         System.out.println("Capturing segments from OSM file...");
         System.out.println();
 

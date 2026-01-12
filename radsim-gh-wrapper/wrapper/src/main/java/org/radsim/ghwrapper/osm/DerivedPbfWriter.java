@@ -30,8 +30,8 @@ public class DerivedPbfWriter {
     private static final Logger LOGGER = LoggerFactory.getLogger(DerivedPbfWriter.class);
 
     private final Path segmentStorePath;
-    private final NodeCache nodeCache;
-    private final WayTagCache wayTagCache;
+    private final INodeCache nodeCache;
+    private final IWayTagCache wayTagCache;
     private final List<OsmRelation> rewrittenRelations;
     private final boolean excludeBarrierEdges;
 
@@ -45,8 +45,8 @@ public class DerivedPbfWriter {
      * @param excludeBarrierEdges whether to exclude barrier edges
      */
     public DerivedPbfWriter(Path segmentStorePath,
-                           NodeCache nodeCache,
-                           WayTagCache wayTagCache,
+                           INodeCache nodeCache,
+                           IWayTagCache wayTagCache,
                            List<OsmRelation> rewrittenRelations,
                            boolean excludeBarrierEdges) {
         this.segmentStorePath = segmentStorePath;

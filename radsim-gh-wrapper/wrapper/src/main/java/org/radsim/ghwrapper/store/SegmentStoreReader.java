@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Reader for segment store files in RSEG format v1.
@@ -154,7 +155,7 @@ public class SegmentStoreReader implements Closeable, Iterable<SegmentRecord> {
 
     /**
      * Loads all records into memory for iteration.
-     * This ensures proper resource management.
+     * WARNING: Only use this for small datasets. For large datasets, use iterator() for streaming.
      */
     private List<SegmentRecord> loadAllRecords() throws IOException {
         if (cachedRecords != null) {
@@ -189,9 +190,68 @@ public class SegmentStoreReader implements Closeable, Iterable<SegmentRecord> {
     @Override
     public Iterator<SegmentRecord> iterator() {
         try {
-            return loadAllRecords().iterator();
+            return new StreamingIterator();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load records", e);
+            throw new RuntimeException("Failed to create streaming iterator", e);
+        }
+    }
+
+    /**
+     * Streaming iterator that reads records on-demand without loading all into memory.
+     */
+    private class StreamingIterator implements Iterator<SegmentRecord> {
+        private final DataInputStream inputStream;
+        private int recordsRead;
+
+        StreamingIterator() throws IOException {
+            this.inputStream = new DataInputStream(new FileInputStream(path.toFile()));
+            // Skip header
+            inputStream.skipBytes(9); // 4 (magic) + 1 (version) + 4 (recordCount)
+            this.recordsRead = 0;
+        }
+
+        @Override
+        public boolean hasNext() {
+            boolean hasMore = recordsRead < recordCount;
+            if (!hasMore) {
+                // Close stream when done
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    // Log but don't throw - we're done anyway
+                }
+            }
+            return hasMore;
+        }
+
+        @Override
+        public SegmentRecord next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+
+            try {
+                int ghEdgeId = inputStream.readInt();
+                long baseWayId = inputStream.readLong();
+                int segIndex = inputStream.readInt();
+                byte flags = inputStream.readByte();
+                int nodeCount = inputStream.readInt();
+
+                long[] nodeRefs = new long[nodeCount];
+                for (int j = 0; j < nodeCount; j++) {
+                    nodeRefs[j] = inputStream.readLong();
+                }
+
+                recordsRead++;
+                return new SegmentRecord(ghEdgeId, baseWayId, segIndex, flags, nodeRefs);
+            } catch (IOException e) {
+                try {
+                    inputStream.close();
+                } catch (IOException e2) {
+                    // Suppress
+                }
+                throw new RuntimeException("Failed to read segment record at index " + recordsRead, e);
+            }
         }
     }
 

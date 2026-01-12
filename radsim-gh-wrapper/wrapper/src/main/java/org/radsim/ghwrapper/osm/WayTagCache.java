@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
  * Cache for OSM way tags (baseWayId -> tags).
@@ -16,9 +17,9 @@ import java.util.Map;
  * key2=value2
  * (blank line)
  */
-public class WayTagCache implements Closeable {
+public class WayTagCache implements Closeable, IWayTagCache {
     private final Path cacheFile;
-    private final Map<Long, Map<String, String>> cache = new HashMap<>();
+    private final Long2ObjectOpenHashMap<Map<String, String>> cache = new Long2ObjectOpenHashMap<>();
     private BufferedWriter writer;
 
     public WayTagCache(Path cacheFile) {

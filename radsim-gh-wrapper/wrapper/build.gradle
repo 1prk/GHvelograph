@@ -11,9 +11,9 @@ dependencies {
     // Using latest stable release
     implementation 'com.graphhopper:graphhopper-core:11.0'
 
-    // Logging
-    implementation 'org.slf4j:slf4j-api:1.7.36'
-    implementation 'ch.qos.logback:logback-classic:1.2.11'
+    // Logging - SLF4J 2.0+ with compatible Logback
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
 
     // CLI argument parsing
     implementation 'info.picocli:picocli:4.7.5'
@@ -31,4 +31,6 @@ dependencies {
 
 tasks.named('run') {
     standardInput = System.in
+    // Allocate heap for large OSM imports (e.g., Germany)
+    jvmArgs = ['-Xmx6g', '-Xms2g']
 }
